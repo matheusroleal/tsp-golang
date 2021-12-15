@@ -5,22 +5,22 @@ import (
 )
 
 func ReadNCities() int {
-	var n_cidades int
-	fmt.Printf("Numero de cidades:\n")
-	fmt.Scanf("%d", &n_cidades)
-	return n_cidades
+	var cities int
+	fmt.Printf("Number of cities:\n")
+	fmt.Scanf("%d", &cities)
+	return cities
 }
 
 func ReadNThreads() int {
 	var n_threads int
-	fmt.Printf("Numero de goroutines:\n")
+	fmt.Printf("Number of goroutines:\n")
 	fmt.Scanf("%d", &n_threads)
 	return n_threads
 }
 
 func ReadMatrixPath() string {
 	var word string
-	fmt.Printf("Path para arquivo com a matriz:\n")
+	fmt.Printf("Path to the matrix file:\n")
 	fmt.Scanf("%s", &word)
 	return word
 }

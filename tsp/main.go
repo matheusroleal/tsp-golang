@@ -32,12 +32,11 @@ func tspCLI() {
 	if err != nil {
 		fmt.Println("[ERROR] :", err)
 	}
-	// utils.ShowMatrix(size, g)
+	utils.ShowMatrix(size, g)
 	start := time.Now()
-	cost, _ := solver.TSPBB(g, 8, 1<<28, int8(threads))
-	fmt.Println(time.Since(start))
-	// fmt.Println("[INF] TSP-Time:", time.Since(start))
-	// fmt.Println("[OUT] Path:", path)
+	cost, path := solver.TSPBB(g, 8, 1<<28, int8(threads))
+	fmt.Println("[INF] TSP-Time:", time.Since(start))
+	fmt.Println("[OUT] Path:", path)
 	fmt.Println("[OUT] Predicted Cost:", cost)
-	// fmt.Println("[INF] Acutal Cost:", solver.ActualCost(path, g))
+	fmt.Println("[INF] Acutal Cost:", solver.ActualCost(path, g))
 }

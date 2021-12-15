@@ -15,7 +15,8 @@ setup:
 
 ## Build Go Code
 build:
-	go build tsp/main.go
+	@cd tsp && go build -o tsp
+	@mv ./tsp/tsp tsp-cli
 
 ## Commands
 help:
