@@ -10,50 +10,53 @@ import (
 func TSPBB(mtrx [][]uint, maxProcs, segSize int, grCnt int8) (uint, []int8) {
 	runtime.GOMAXPROCS(maxProcs)
 	status := NewStatus(mtrx, segSize)
-	var i int8
+
 	rootFBPath := make([]int8, (status.vtxCount<<1)+2)
-	for i = 0; i < status.vtxCount; i++ {
+	for i := int8(0); i < status.vtxCount; i++ {
 		rootFBPath[i] = -1
 		rootFBPath[status.vtxCount+i] = -1
 	}
+
 	status.Put(NewElement(rootFBPath, 0, 1))
-	for i = 0; i < grCnt; i++ {
-		status.wg.Add(1)
-		go extend(status)
+	status.wg.Add(int(grCnt))
+
+	for i := int8(0); i < grCnt; i++ {
+		go func(st *Status) {
+			defer st.wg.Done()
+
+			var c *Element
+			var i int8
+			for st.curSize > 0 {
+				if st.solved {
+					break
+				}
+				c = st.Get()
+				if c.Count == st.vtxCount+1 {
+					st.solution = c
+					st.solved = true
+					continue
+				}
+				i = 0
+				if c.Count != st.vtxCount {
+					i = 1
+				}
+				for ; i < st.vtxCount; i++ {
+					if c.FBPath[st.vtxCount+i] == -1 &&
+						st.adjMtrx[c.LstVtx][i] != 0 {
+						st.Put(getNewElement(st, c, i))
+					}
+				}
+			}
+		}(status)
 	}
+
 	status.wg.Wait()
+
 	if status.solved {
 		return status.solution.Boundary, elemToPath(status)
 	}
-	return 2147483647, make([]int8, 0)
-}
 
-func extend(status *Status) {
-	var candidate *Element
-	var i int8
-	for status.curSize > 0 {
-		if status.solved {
-			break
-		}
-		candidate = status.Get()
-		if candidate.Count == status.vtxCount+1 {
-			status.solution = candidate
-			status.solved = true
-		} else {
-			if candidate.Count == status.vtxCount {
-				i = 0
-			} else {
-				i = 1
-			}
-			for ; i < status.vtxCount; i++ {
-				if candidate.FBPath[status.vtxCount+i] == -1 &&
-					status.adjMtrx[candidate.LstVtx][i] != 0 {
-					status.Put(getNewElement(status, candidate, i))
-				}
-			}
-		}
-	}
-	status.wg.Done()
+	return 2147483647, make([]int8, 0)
 }
 
 // UpdateBoundary updates the boundary of the Status Element
@@ -68,16 +71,17 @@ func UpdateBoundary(status *Status, e *Element) {
 		if e.FBPath[i] != -1 {
 			// If there is a path we can add it's value immediately
 			out += status.adjMtrx[i][e.FBPath[i]]
-		} else {
-			// Else we have to cycle through the matrix to find the lowest value
-			min = ^uint(0)
-			for j = 0; j < status.vtxCount; j++ {
-				if v = status.adjMtrx[i][j]; v != 0 && v < min {
-					min = v
-				}
-			}
-			out += min
+
+			continue
 		}
+		// Else we have to cycle through the matrix to find the lowest value
+		min = ^uint(0)
+		for j = 0; j < status.vtxCount; j++ {
+			if v = status.adjMtrx[i][j]; v != 0 && v < min {
+				min = v
+			}
+		}
+		out += min
 	}
 	// Incoming edges
 	var in uint
@@ -85,16 +89,16 @@ func UpdateBoundary(status *Status, e *Element) {
 		if e.FBPath[status.vtxCount+i] != -1 {
 			// If there is a path we can add it's value immediately
 			in += status.adjMtrx[e.FBPath[status.vtxCount+i]][i]
-		} else {
-			// Else we have to cycle through the matrix to find the lowest value
-			min = ^uint(0)
-			for j = 0; j < status.vtxCount; j++ {
-				if v = status.adjMtrx[j][i]; v != 0 && v < min {
-					min = v
-				}
-			}
-			in += min
+			continue
 		}
+		// Else we have to cycle through the matrix to find the lowest value
+		min = ^uint(0)
+		for j = 0; j < status.vtxCount; j++ {
+			if v = status.adjMtrx[j][i]; v != 0 && v < min {
+				min = v
+			}
+		}
+		in += min
 	}
 	if in > out {
 		e.Boundary = in
@@ -115,12 +119,11 @@ func getNewElement(status *Status, candidate *Element, i int8) *Element {
 }
 
 func elemToPath(status *Status) []int8 {
-	path := make([]int8, status.vtxCount)
-	var i, next int8 // starts with 0 anyways
-	for i = 0; i < status.vtxCount; i++ {
-		path[i] = next
-		next = status.solution.FBPath[next]
+	path, next := make([]int8, status.vtxCount), int8(0)
+	for i := int8(0); i < status.vtxCount; i++ {
+		path[i], next = next, status.solution.FBPath[next]
 	}
+
 	return path
 }
 
